@@ -1,0 +1,30 @@
+# PyManager local environment and data
+.venv/
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Private scripts: a separate (private) repository cloned here, never part of this repo
+scripts/private/
+
+# Files the scripts read or produce (the folders themselves are kept through .gitkeep)
+scripts/**/input/*
+scripts/**/output/*
+!scripts/**/input/.gitkeep
+!scripts/**/output/.gitkeep
+
+# Secrets
+cookies*.txt
+.env
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

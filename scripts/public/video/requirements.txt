@@ -1,0 +1,2 @@
+yt-dlp[default]>=2026.1.1
+moviepy==1.0.3

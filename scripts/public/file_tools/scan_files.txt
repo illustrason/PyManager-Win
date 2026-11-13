@@ -1,0 +1,6 @@
+Scans a folder and writes the list of its files to a text file. It can also show the folder tree.
+
+Parameters:
+directory_to_scan  Folder to scan (default: input).
+output_file_path   Output text file (default: output/file_list.txt).
+show_tree          True to show the indented folder tree, False for a flat list of file names.

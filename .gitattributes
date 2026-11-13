@@ -1,0 +1,6 @@
+# Normalize line endings in the repository; keep Windows batch files in CRLF
+* text=auto
+*.bat text eol=crlf
+
+# The Python version file is read by start.bat
+.python-version text eol=crlf

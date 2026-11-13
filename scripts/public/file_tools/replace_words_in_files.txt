@@ -1,0 +1,6 @@
+Replaces a common part of the file and folder names inside a folder (default: input) with a new string, keeping the extensions. Sub-folders are processed too.
+
+Parameters:
+old_word       Text to look for in the names.
+new_word       Text that replaces it.
+directory_path Folder to process.

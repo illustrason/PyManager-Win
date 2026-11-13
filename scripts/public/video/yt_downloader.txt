@@ -1,0 +1,18 @@
+Downloads a video or an audio track from a YouTube link.
+
+You can:
+- Download the whole video, or only an excerpt defined by timecodes.
+- Choose the format: video (.mp4, H.264) or audio (.mp3, 320 kbps stereo).
+- Save the final file automatically in the output folder.
+
+Parameters:
+url                   YouTube link.
+tc_in                 Start timecode ("HH:MM:SS"). Leave empty to start at the beginning.
+tc_out                End timecode ("HH:MM:SS"). Leave empty to go to the end.
+format_type           "video" or "audio".
+output_folder         Where the final file is saved (default: output).
+cookies_from_browser  Browser to read the YouTube cookies from ("firefox", "edge", "brave"), or "none".
+
+If both timecodes are empty, the whole video is kept. With format_type "audio", only the sound is extracted, as MP3.
+The temporary files are removed automatically after processing.
+Requires a JavaScript runtime (Deno or Node.js); on Windows the script offers to install Deno with winget.

@@ -1,0 +1,5 @@
+Renames every file in a folder (default: input) to a base name followed by an incrementing number, keeping the original extensions.
+
+Parameters:
+base_name      Base name, e.g. "file_name_" gives file_name_01.txt, file_name_02.txt...
+directory_path Folder that contains the files to rename.
