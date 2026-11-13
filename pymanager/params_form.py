@@ -4,9 +4,9 @@ from __future__ import annotations
 import tkinter as tk
 
 from . import theme as T
-from .params import display_default, parse_value
+from .params import DATE_FORMAT_HINT, DATE_ONLY_HINT, display_default, parse_value
 from .theme import S
-from .widgets import PlaceholderEntry, Switch
+from .widgets import ChoiceField, PlaceholderEntry, Switch
 
 
 class _Row:
@@ -24,8 +24,13 @@ class _Row:
         self.reset.bind("<Button-1>", lambda e: self.clear())
 
         self.override = None            # booléens : None = valeur du script
-        self.entry = self.switch = self.state = None
-        if param.kind == "bool":
+        self.entry = self.switch = self.state = self.picker = None
+        if param.kind == "choice":
+            self.picker = ChoiceField(self.frame, param.options, param.default, command=self._changed)
+            if isinstance(saved, list):
+                self.picker.set(saved)
+            self.picker.pack(fill="x")
+        elif param.kind == "bool":
             if isinstance(saved, bool):
                 self.override = saved
             line = tk.Frame(self.frame, bg=T.PANEL)
@@ -40,6 +45,10 @@ class _Row:
                 self.entry.var.set(saved)
             self.entry.pack(fill="x")
             self.entry.var.trace_add("write", lambda *_: self._changed())
+            if param.kind in ("datetime", "date"):
+                hint = DATE_ONLY_HINT if param.kind == "date" else DATE_FORMAT_HINT
+                tk.Label(self.frame, text="Format : " + hint, font=T.F_SMALL, fg=T.MUTED, bg=T.PANEL,
+                         anchor="w").pack(fill="x", pady=(S(3), 0))
         self.error = tk.Label(self.frame, font=T.F_SMALL, fg=T.DANGER, bg=T.PANEL, anchor="w")
         self._refresh()
 
@@ -57,13 +66,22 @@ class _Row:
     def clear(self):
         if self.entry is not None:
             self.entry.var.set("")
+        elif self.picker is not None:
+            self.picker.set(None)
         else:
             self.override = None
             self.switch.set(self._effective())
         self._changed()
 
     def _refresh(self):
-        if self.entry is not None:
+        if self.picker is not None:
+            has = self.picker.selected is not None
+            if self.picker.selected == []:
+                self.error.configure(text="Choisissez au moins une valeur")
+                self.error.pack(fill="x", pady=(S(3), 0))
+            else:
+                self.error.pack_forget()
+        elif self.entry is not None:
             has = self.entry.var.get() != ""
             ok, msg = (True, "") if not has else parse_value(self.param.kind, self.entry.var.get())
             self.entry.set_invalid(not ok)
@@ -83,6 +101,13 @@ class _Row:
 
     def result(self):
         """(a_une_valeur, valeur_typée, texte_à_mémoriser, erreur)"""
+        if self.picker is not None:
+            chosen = self.picker.selected
+            if chosen is None:
+                return False, None, None, None
+            if not chosen:
+                return False, None, None, "Choisissez au moins une valeur"
+            return True, chosen, chosen, None
         if self.entry is None:
             if self.override is None:
                 return False, None, None, None
@@ -114,7 +139,8 @@ class ParamsForm(tk.Frame):
             if p.name in self.rows:
                 continue
             value = saved.get(p.name)
-            if (p.kind == "bool") != isinstance(value, bool):
+            expected = bool if p.kind == "bool" else list if p.kind == "choice" else str
+            if not isinstance(value, expected):
                 value = None
             row = _Row(self, p, value, self.on_change)
             row.frame.pack(fill="x", pady=(0, S(14)))

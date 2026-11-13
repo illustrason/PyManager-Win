@@ -43,6 +43,7 @@ class Details:
     params: list = field(default_factory=list)
     is_gui: bool = False
     stamp: tuple = (0.0, 0.0)     # (mtime du .py, mtime du .txt) pour détecter les changements
+    issues: list = field(default_factory=list)   # [(ligne, message)] : @expose ignorés ou mal écrits
 
 
 def walk_python_files(root: Path, include_private: bool = False):
@@ -128,11 +129,13 @@ def load_details(info: ScriptInfo) -> Details:
             description = (ast.get_docstring(ast.parse(source)) or "").strip()
         except (SyntaxError, ValueError):
             description = ""
-    params: list = find_exposed(source)
+    from .check import check_source
+    params, issues = check_source(source)
     return Details(
         description=description,
         has_description_file=has_txt,
         params=params,
+        issues=issues,
         is_gui=bool(imports_of(source) & GUI_MODULES),
         stamp=stamp_of(info),
     )

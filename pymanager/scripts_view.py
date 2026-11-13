@@ -35,6 +35,8 @@ def open_path(path: str) -> None:
 def _fmt_value(value) -> str:
     if isinstance(value, str):
         return ('r"%s"' if "\\" in value else '"%s"') % value
+    if isinstance(value, list):
+        return "[" + ", ".join(_fmt_value(v) for v in value) + "]"
     return str(value)
 
 
@@ -138,6 +140,7 @@ class ScriptsView(tk.Frame):
         self.params_card, pbody = self._card(inner, "Paramètres", "champ vide = valeur du script")
         self.form = ParamsForm(pbody)
         self.form.pack(fill="x")
+        self.warn = tk.Label(pbody, font=T.F_SMALL, fg=T.WARN, bg=T.PANEL, justify="left", anchor="w")
         self.no_params = tk.Label(pbody, text=NO_PARAMS_HINT, font=T.F_SMALL, fg=T.MUTED, bg=T.PANEL,
                                   justify="left", anchor="w")
         inner.bind("<Configure>", lambda e: self._wrap(inner.winfo_width()), add="+")
@@ -148,6 +151,7 @@ class ScriptsView(tk.Frame):
         wrap = max(S(240), width - S(100))
         self.desc.configure(wraplength=wrap)
         self.no_params.configure(wraplength=wrap)
+        self.warn.configure(wraplength=wrap)
 
     def _show_empty(self, text=None):
         if text is None:
@@ -270,6 +274,12 @@ class ScriptsView(tk.Frame):
         else:
             self.form.pack_forget()
             self.no_params.pack(fill="x")
+        if det.issues:
+            self.warn.configure(text="⚠  " + "\n⚠  ".join(f"ligne {n} : {msg}" for n, msg in det.issues[:6])
+                                + ("\n…" if len(det.issues) > 6 else ""))
+            self.warn.pack(fill="x", pady=(S(10), 0))
+        else:
+            self.warn.pack_forget()
         self.content.tkraise()
 
     def _save_form(self) -> None:

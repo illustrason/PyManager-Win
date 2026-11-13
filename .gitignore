@@ -17,6 +17,7 @@ scripts/**/input/*
 scripts/**/output/*
 !scripts/**/input/.gitkeep
 !scripts/**/output/.gitkeep
+scripts/**/temp/
 
 # Secrets
 cookies*.txt

@@ -31,4 +31,5 @@ TARGET_SIZE_MB = 19   # @expose
 ```
 
 PyManager affiche alors un champ par variable. Champ vide = valeur du script.
-Seules les valeurs simples (texte, nombre entier ou décimal, booléen) peuvent être exposées.
+Texte, nombres et booléens donnent un champ chacun. Une valeur `datetime(...)` ou `date(...)` donne un seul champ date,
+et un tuple ou une liste comme `(".adg", ".als")` donne un menu déroulant à cases à cocher (voir le README principal).

@@ -45,6 +45,20 @@ Drop a `.py` file in `scripts/public/` or `scripts/private/` (or in a sub-folder
 
 Scripts run with their own folder as the working directory, so `"input"` and `"output"` are relative to it.
 
+### Write a script with an AI
+
+[`docs/WRITING_SCRIPTS.md`](docs/WRITING_SCRIPTS.md) is a brief meant to be sent to an AI assistant: how scripts are run,
+which files to deliver, how to expose variables (text, numbers, switches, dates, drop-down lists), the console
+rules and a checklist. Send it with [`docs/script_template.py`](docs/script_template.py) and a description of what you want.
+To check the result, run from the project folder:
+
+```
+python -m pymanager --check scripts\private\audio\my_script.py
+```
+
+It lists the fields PyManager will show and explains every `@expose` that is ignored (also shown under the
+parameters in the interface).
+
 ### Public and private scripts
 
 `scripts/public/` and `scripts/private/` are **merged into one list**: `public/video/a.py` and
@@ -62,24 +76,49 @@ The merged folders are set by `source_dirs` in `data/settings.json` (see [Settin
 Add `@expose` in the comment of the line (or on the line just above):
 
 ```python
-INPUT_DIR = "input"      # Input folder @expose
-BITRATE = "320k"         # Bit rate @expose
-TARGET_SIZE_MB = 19      # @expose
-NORMALIZE = True         # Normalize the volume @expose
+INPUT_DIR = "input"                       # Input folder @expose
+BITRATE = "320k"                          # Bit rate @expose
+TARGET_SIZE_MB = 19                       # @expose
+NORMALIZE = True                          # Normalize the volume @expose
+EXTENSIONS = (".adg", ".als", ".adv")     # Formats to process @expose
+START = datetime(2020, 2, 18, 10, 37)     # Start date @expose
 ```
 
 - One field is created per variable; the comment text is used as its label.
 - **An empty field means the script's value**. It is shown in grey and re-read live if you edit the file.
 - The text you type is taken as is: `C:\Users\me\Documents\test` works without quotes or doubled `\`
   (the quotes added by "Copy as path" are removed).
-- Text, integer, decimal and boolean (switch) values are supported; the type comes from the script's value.
 - The last values you typed are remembered per script (`data/params.json`).
 - The script file is never modified: PyManager replaces the value in memory at launch.
   The script stays runnable on its own, with its original values.
 
-Limits: only top-level assignments of a literal value can be exposed (no list, dictionary or expression
-such as `Path(...)`). A script that starts Python sub-processes (`multiprocessing`) does not see the
-replaced values in its child processes.
+The field depends on the value written in the script:
+
+| In the script | Field in PyManager |
+|---|---|
+| `"text"` | Text field |
+| `42`, `3.5` | Number field (a comma is accepted for decimals) |
+| `True`, `False` | Switch |
+| `datetime(2020, 2, 18, 10, 37)`, `date(2020, 2, 18)` | One date field, see below |
+| `(".adg", ".als")`, `[1, 2, 3]` | Drop-down list with check boxes, see below |
+
+### Dates
+
+A `datetime(...)` or `date(...)` value (with plain integers, 3 to 7 arguments) gets a **single field** instead
+of one per component. Type `2024-12-31 23:59:58` or, day first, `31/12/2024 23:59`. The time is optional
+(midnight when left out). The script's date is shown in grey while the field is empty.
+`datetime.datetime(...)` and `datetime.date(...)` work too. The script still receives a real `datetime` or `date`.
+
+### Drop-down lists
+
+A tuple or list of texts or numbers of the same type (up to 20 items) becomes a **drop-down with check boxes**.
+Nothing changed means the script's full list; tick only the entries you want and the script receives
+that shorter tuple or list, in the original order. Ticking every entry again goes back to the script's value,
+and at least one entry must stay ticked. Use `↺ valeur du script` to reset.
+
+Limits: only top-level assignments can be exposed, with a value written as above (no dictionary, nested
+list or expression such as `Path(...)`). A script that starts Python sub-processes (`multiprocessing`) does
+not see the replaced values in its child processes.
 
 ## Environment health
 
@@ -135,6 +174,7 @@ Anyone with access to the private repository can read its whole history: never c
 ## Development
 
 The code is in `pymanager/` and uses the standard library only, with no dependency.
+The docs for script authors are in `docs/`.
 
 ## License
 

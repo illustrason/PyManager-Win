@@ -43,6 +43,20 @@ Déposez un `.py` dans `scripts/public/` ou `scripts/private/` (ou dans un sous-
 
 Les scripts s'exécutent avec leur propre dossier comme dossier courant : `"input"` et `"output"` y sont relatifs.
 
+### Écrire un script avec une IA
+
+[`docs/WRITING_SCRIPTS.fr.md`](docs/WRITING_SCRIPTS.fr.md) est un cahier des charges à envoyer à un assistant IA : comment les scripts
+sont lancés, quels fichiers livrer, comment exposer des variables (texte, nombres, interrupteurs, dates, menus déroulants), les
+règles de la console et une checklist. Envoyez-le avec [`docs/script_template.py`](docs/script_template.py) et la description
+de ce que vous voulez. Pour contrôler le résultat, depuis le dossier du projet :
+
+```
+python -m pymanager --check scripts\private\audio\mon_script.py
+```
+
+La commande liste les champs que PyManager affichera et explique chaque `@expose` ignoré (également signalé sous les
+paramètres dans l'interface).
+
 ### Scripts publics et privés
 
 `scripts/public/` et `scripts/private/` sont **fusionnés dans une seule liste** : `public/video/a.py` et
@@ -60,23 +74,48 @@ Les dossiers fusionnés se règlent avec `source_dirs` dans `data/settings.json`
 Ajoutez `@expose` dans le commentaire de la ligne (ou sur la ligne juste au-dessus) :
 
 ```python
-INPUT_DIR = "input"      # Dossier d'entrée @expose
-BITRATE = "320k"         # Débit binaire @expose
-TARGET_SIZE_MB = 19      # @expose
-NORMALIZE = True         # Normaliser le volume @expose
+INPUT_DIR = "input"                       # Dossier d'entrée @expose
+BITRATE = "320k"                          # Débit binaire @expose
+TARGET_SIZE_MB = 19                       # @expose
+NORMALIZE = True                          # Normaliser le volume @expose
+EXTENSIONS = (".adg", ".als", ".adv")     # Formats à traiter @expose
+START = datetime(2020, 2, 18, 10, 37)     # Date de départ @expose
 ```
 
 - Un champ est créé par variable ; le texte du commentaire sert de libellé.
 - **Champ vide = valeur du script**, affichée en gris et relue en direct si vous modifiez le fichier.
 - Le texte saisi est pris tel quel : `C:\Users\moi\Documents\test` fonctionne sans guillemets ni double `\`
   (les guillemets de « Copier en tant que chemin » sont retirés).
-- Texte, entier, décimal et booléen (interrupteur) sont gérés ; le type vient de la valeur du script.
 - Les dernières valeurs saisies sont mémorisées par script (`data/params.json`).
 - Le fichier du script n'est jamais modifié : PyManager remplace la valeur au lancement, en mémoire.
   Le script reste exécutable seul, avec ses valeurs d'origine.
 
-Limites : seules les affectations de premier niveau à valeur littérale sont exposables (pas de liste, de
-dictionnaire ni d'expression comme `Path(...)`). Un script qui crée des sous-processus Python
+Le champ dépend de la valeur écrite dans le script :
+
+| Dans le script | Champ dans PyManager |
+|---|---|
+| `"texte"` | Champ texte |
+| `42`, `3.5` | Champ numérique (la virgule est acceptée pour les décimaux) |
+| `True`, `False` | Interrupteur |
+| `datetime(2020, 2, 18, 10, 37)`, `date(2020, 2, 18)` | Un seul champ date, voir ci-dessous |
+| `(".adg", ".als")`, `[1, 2, 3]` | Menu déroulant à cases à cocher, voir ci-dessous |
+
+### Dates
+
+Une valeur `datetime(...)` ou `date(...)` (entiers simples, de 3 à 7 arguments) donne **un seul champ** au lieu
+d'un par composante. Saisissez `2024-12-31 23:59:58` ou, jour en premier, `31/12/2024 23:59`. L'heure est facultative
+(minuit si elle est omise). La date du script reste affichée en gris tant que le champ est vide.
+`datetime.datetime(...)` et `datetime.date(...)` fonctionnent aussi. Le script reçoit toujours un vrai `datetime` ou `date`.
+
+### Menus déroulants
+
+Un tuple ou une liste de textes ou de nombres du même type (20 éléments au plus) devient un **menu déroulant à cases
+à cocher**. Sans modification, le script garde sa liste complète ; cochez seulement les entrées voulues et le script
+reçoit ce tuple ou cette liste plus courte, dans l'ordre d'origine. Recocher toutes les entrées revient à la valeur
+du script, et au moins une entrée doit rester cochée. `↺ valeur du script` remet tout à zéro.
+
+Limites : seules les affectations de premier niveau sont exposables, avec une valeur écrite comme ci-dessus (pas de
+dictionnaire, de liste imbriquée ni d'expression comme `Path(...)`). Un script qui crée des sous-processus Python
 (`multiprocessing`) ne voit pas les valeurs remplacées dans ses processus enfants.
 
 ## Santé de l'environnement
@@ -133,6 +172,7 @@ Toute personne ayant accès au dépôt privé peut lire tout son historique : n'
 ## Développement
 
 Le code est dans `pymanager/` (bibliothèque standard uniquement, aucune dépendance).
+La documentation pour les auteurs de scripts est dans `docs/`.
 
 ## Licence
 

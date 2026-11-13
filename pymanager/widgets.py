@@ -124,6 +124,136 @@ class Switch(tk.Canvas):
         self._draw()
 
 
+class ChoiceField(tk.Frame):
+    """Menu déroulant à choix multiple (cases à cocher).
+
+    ``selected`` vaut None tant que l'utilisateur n'a rien changé (= valeur du script,
+    affichée en gris), sinon la liste des valeurs cochées, dans l'ordre des options.
+    """
+
+    def __init__(self, master, options, default, command=None, bg=T.PANEL2):
+        super().__init__(master, bg=T.BORDER, padx=1, pady=1)
+        self.options = list(options)
+        self.default = list(dict.fromkeys(default))
+        self.command = command
+        self.selected = None
+        self._pop = None
+        self._bg = bg
+        self._inner = tk.Frame(self, bg=bg, cursor="hand2")
+        self._inner.pack(fill="x")
+        self.arrow = tk.Label(self._inner, text="▾", font=T.F_UI, fg=T.MUTED, bg=bg, cursor="hand2")
+        self.arrow.pack(side="right", padx=(0, S(8)))
+        self.text = tk.Label(self._inner, font=T.F_MONO, anchor="w", bg=bg, cursor="hand2")
+        self.text.pack(side="left", fill="x", expand=True, padx=S(8), pady=S(7))
+        for w in (self._inner, self.arrow, self.text):
+            w.bind("<Button-1>", lambda e: self.toggle_popup())
+        self.bind("<Destroy>", lambda e: self._close() if e.widget is self else None)
+        self._paint()
+
+    # -- état
+    def current(self) -> list:
+        return list(self.default if self.selected is None else self.selected)
+
+    def set(self, values) -> None:
+        """None = valeur du script ; sinon sélection (valeurs inconnues ignorées)."""
+        if values is None:
+            self.selected = None
+        else:
+            chosen = [o for o in self.options if o in values]
+            self.selected = None if chosen == self.default else chosen
+        self._paint()
+
+    def toggle_option(self, option) -> None:
+        current = self.current()
+        wanted = [o for o in self.options if (o in current) != (o == option)]
+        self.set(wanted)
+        self._paint()
+        if self._pop is not None:
+            self._fill_rows()
+        if self.command:
+            self.command()
+
+    def _paint(self) -> None:
+        if self.selected is None:
+            self.text.configure(text=", ".join(str(v) for v in self.default), fg=T.MUTED)
+        elif not self.selected:
+            self.text.configure(text="(aucune valeur)", fg=T.DANGER)
+        else:
+            self.text.configure(text=", ".join(str(v) for v in self.selected), fg=T.TEXT)
+        self.configure(bg=T.ACCENT if self._pop is not None else T.BORDER)
+
+    # -- fenêtre déroulante
+    def toggle_popup(self) -> None:
+        if self._pop is not None:
+            self._close()
+        else:
+            self._open()
+
+    def _open(self) -> None:
+        top = tk.Toplevel(self)
+        top.withdraw()
+        top.overrideredirect(True)
+        top.configure(bg=T.ACCENT)
+        self._body = tk.Frame(top, bg=T.PANEL2)
+        self._body.pack(fill="both", expand=True, padx=1, pady=1)
+        self._pop = top
+        self._fill_rows()
+        top.update_idletasks()
+        w = max(self.winfo_width(), self._body.winfo_reqwidth() + 2)
+        h = self._body.winfo_reqheight() + 2
+        top.geometry(f"{w}x{h}+{self.winfo_rootx()}+{self.winfo_rooty() + self.winfo_height() + S(2)}")
+        top.deiconify()
+        top.lift()
+        top.bind("<Escape>", lambda e: self._close())
+        top.bind("<Button-1>", self._maybe_close, add="+")
+        try:
+            top.focus_force()
+            top.grab_set()
+        except tk.TclError:
+            pass
+        self._paint()
+
+    def _fill_rows(self) -> None:
+        for child in self._body.winfo_children():
+            child.destroy()
+        current = self.current()
+        for option in self.options:
+            on = option in current
+            row = tk.Frame(self._body, bg=T.PANEL2, cursor="hand2")
+            row.pack(fill="x")
+            box = tk.Label(row, text="☑" if on else "☐", font=T.F_UI, fg=T.ACCENT if on else T.MUTED,
+                           bg=T.PANEL2, cursor="hand2")
+            box.pack(side="left", padx=(S(10), S(6)), pady=S(5))
+            name = tk.Label(row, text=str(option), font=T.F_MONO, fg=T.TEXT, bg=T.PANEL2, anchor="w", cursor="hand2")
+            name.pack(side="left", fill="x", expand=True, padx=(0, S(12)))
+            for w in (row, box, name):
+                w.bind("<Button-1>", lambda e, o=option: self.toggle_option(o))
+                w.bind("<Enter>", lambda e, r=row, b=box, n=name: [x.configure(bg=T.SELECT) for x in (r, b, n)])
+                w.bind("<Leave>", lambda e, r=row, b=box, n=name: [x.configure(bg=T.PANEL2) for x in (r, b, n)])
+
+    def _maybe_close(self, event) -> None:
+        top = self._pop
+        if top is None:
+            return
+        inside = (top.winfo_rootx() <= event.x_root < top.winfo_rootx() + top.winfo_width()
+                  and top.winfo_rooty() <= event.y_root < top.winfo_rooty() + top.winfo_height())
+        if not inside:
+            self._close()
+
+    def _close(self) -> None:
+        top, self._pop = self._pop, None
+        if top is not None:
+            try:
+                top.grab_release()
+                top.destroy()
+            except tk.TclError:
+                pass
+        try:
+            self._paint()
+        except tk.TclError:
+            pass
+
+
 class AutoScrollbar(ttk.Scrollbar):
     """Barre de défilement qui disparaît quand tout le contenu est visible (à placer avec grid)."""
 

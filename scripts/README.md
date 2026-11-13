@@ -31,4 +31,5 @@ TARGET_SIZE_MB = 19   # @expose
 ```
 
 PyManager then shows one field per variable. An empty field means the script's value.
-Only simple values (text, integer or decimal number, boolean) can be exposed.
+Text, numbers and booleans give one field each. A `datetime(...)` or `date(...)` value gives a single date field,
+and a tuple or list such as `(".adg", ".als")` gives a drop-down with check boxes (see the main README).
